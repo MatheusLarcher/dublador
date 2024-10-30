@@ -1,0 +1,26 @@
+<!-- templates/upload.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carregar Vídeo</title>
+</head>
+<body>
+    <h2>Carregar um Arquivo de Vídeo</h2>
+    <form action="/process_video" method="post" enctype="multipart/form-data">
+        <label for="videoUpload">Selecione um vídeo:</label>
+        <input type="file" id="videoUpload" name="video" accept="video/*" required>
+        <br><br>
+        <button type="submit">Dublar Vídeo</button>
+    </form>
+    
+    {% if filename %}
+        <h3>Vídeo Processado:</h3>
+        <video id="videoPlayer" width="600" controls>
+            <source src="{{ url_for('static', filename=filename) }}" type="video/mp4">
+            Seu navegador não suporta o elemento de vídeo.
+        </video>
+    {% endif %}
+</body>
+</html>
