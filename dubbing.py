@@ -13,7 +13,7 @@ def carregar_modelo_whisper(modelo="base"):
 
 # Função para transcrever áudio
 def transcrever_audio(model, audio_path, language="en"):
-    result = model.transcribe(audio_path, language=language)
+    result = model.transcribe(audio_path, language=language, word_timestamps=True)
     return result["segments"]
 
 # Função para traduzir texto usando Google Translator
@@ -43,7 +43,7 @@ def ajustar_velocidade(segmento_audio, duracao_original_ms):
 # Função principal que coordena o processo de tradução e sincronização
 def dublar_audio(audio_path):
     # Carregar o modelo Whisper
-    model = carregar_modelo_whisper("base")
+    model = carregar_modelo_whisper("turbo") # base, small, medium, large, large-v3, turbo
 
     # Transcrever o áudio em inglês
     segments = transcrever_audio(model, audio_path, language="en")
