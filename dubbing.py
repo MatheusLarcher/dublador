@@ -2,111 +2,85 @@ import whisper
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 from pydub import AudioSegment
-from pydub.effects import speedup
 import tempfile
 import os
-import moviepy.editor as mp
+from moviepy.editor import VideoFileClip, AudioFileClip
+import shutil
 
-# Função para carregar o modelo Whisper pré-treinado
-def carregar_modelo_whisper(modelo="base"):
-    return whisper.load_model(modelo)
+def dublar_video(arquivo_entrada, idioma_destino='pt'):
+    """
+    Transcreve o áudio de um arquivo, traduz cada segmento para o idioma desejado,
+    converte os textos traduzidos em áudio e sobrepõe ao vídeo original se for um vídeo.
 
-# Função para transcrever áudio
-def transcrever_audio(model, audio_path, language="en"):
-    result = model.transcribe(audio_path, language=language, word_timestamps=True)
-    return result["segments"]
+    Parâmetros:
+    - arquivo_entrada (str): Caminho do arquivo de áudio ou vídeo.
+    - idioma_destino (str): Código do idioma para tradução e síntese de voz (padrão é 'pt' para português).
+    """
 
-# Função para traduzir texto usando Google Translator
-def traduzir_texto(texto, source_lang='en', target_lang='pt'):
-    translator = GoogleTranslator(source=source_lang, target=target_lang)
-    return translator.translate(texto)
+    # Carrega o modelo Whisper
+    modelo = whisper.load_model("base")
 
-# Função para gerar áudio TTS de um texto em português
-def gerar_audio_tts(texto_pt, idx, temp_dir):
-    temp_audio_path = os.path.join(temp_dir, f"segment_{idx}.mp3")
-    tts = gTTS(text=texto_pt, lang='pt')
-    tts.save(temp_audio_path)
-    return temp_audio_path
+    # Transcreve o áudio
+    resultado = modelo.transcribe(arquivo_entrada, word_timestamps=True)
 
-# Função para ajustar a velocidade do áudio e sincronizar a duração
-def ajustar_velocidade(segmento_audio, duracao_original_ms):
-    duracao_atual_ms = len(segmento_audio)
-    if duracao_atual_ms > 0 and duracao_original_ms > 0:
-        fator_velocidade = round(duracao_atual_ms / duracao_original_ms, 6)
-        fator_velocidade = max(fator_velocidade, 1)
-        segmento_audio = speedup(segmento_audio, playback_speed=fator_velocidade)
-        segmento_audio = segmento_audio[:duracao_original_ms]
-    else:
-        segmento_audio = AudioSegment.silent(duration=max(1, duracao_original_ms))
-    return segmento_audio
+    # Cria uma pasta para salvar os áudios traduzidos temporaria
+    with tempfile.TemporaryDirectory() as pasta_audio:
+        # Lista para armazenar caminhos dos segmentos de áudio
+        lista_segmentos = []
 
-# Função principal que coordena o processo de tradução e sincronização
-def dublar_audio(audio_path):
-    # Carregar o modelo Whisper
-    model = carregar_modelo_whisper("turbo") # base, small, medium, large, large-v3, turbo
+        for idx, segmento in enumerate(resultado['segments']):
+            inicio = segmento['start']
+            fim = segmento['end']
+            texto_original = segmento['text']
 
-    # Transcrever o áudio em inglês
-    segments = transcrever_audio(model, audio_path, language="en")
+            # Traduz o texto para o idioma destino usando deep_translator
+            texto_traduzido = GoogleTranslator(source='auto', target=idioma_destino).translate(texto_original)
+            print(f"[{inicio} - {fim}] {texto_traduzido}")
 
-    # Inicializar o áudio final e criar diretório temporário
-    audio_final = AudioSegment.empty()
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Processar cada segmento
-        for idx, segment in enumerate(segments):
-            # Extrair e traduzir texto
-            texto_en = segment['text']
-            texto_pt = traduzir_texto(texto_en)
-            segment['text_pt'] = texto_pt
+            # Converte o texto traduzido em áudio
+            tts = gTTS(texto_traduzido, lang=idioma_destino)
+            caminho_arquivo = os.path.join(pasta_audio, f"segmento_{idx}.mp3")
+            tts.save(caminho_arquivo)
+            lista_segmentos.append(caminho_arquivo)
 
-            # Exibir informações do segmento
-            print(f"Segmento {idx+1}:")
-            print(f" - Início: {segment['start']}s")
-            print(f" - Fim: {segment['end']}s")
-            print(f" - Texto original: {texto_en}")
-            print(f" - Texto traduzido: {texto_pt}")
-
-            # Gerar áudio TTS e carregar o segmento de áudio
-            temp_audio_path = gerar_audio_tts(texto_pt, idx, temp_dir)
-            segmento_audio = AudioSegment.from_mp3(temp_audio_path)
-
-            # Ajustar a velocidade e duração do áudio
-            duracao_original_ms = (segment['end'] - segment['start']) * 1000
-            segmento_audio = ajustar_velocidade(segmento_audio, duracao_original_ms)
-
-            # Adicionar o segmento ao áudio final
+        # Concatena todos os segmentos de áudio
+        audio_final = AudioSegment.empty()
+        for caminho in lista_segmentos:
+            segmento_audio = AudioSegment.from_mp3(caminho)
             audio_final += segmento_audio
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio_file:
-            caminho_audio_final = temp_audio_file.name
-            # Exportar o áudio final sincronizado
-            audio_final.export(caminho_audio_final, format="mp3")
+        # Exporta o áudio final concatenado
+        caminho_audio_final = os.path.join(pasta_audio, "audio_final.mp3")
+        audio_final.export(caminho_audio_final, format="mp3")
 
-    print("Processo concluído! O áudio traduzido e sincronizado está em 'output_audio_pt.mp3'.")
-    return caminho_audio_final
+        # Verifica se o arquivo de entrada é um vídeo
+        extensao = os.path.splitext(arquivo_entrada)[1].lower()
+        extensoes_video = ['.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv']
+
+        if extensao in extensoes_video:
+            # Carrega o vídeo original
+            video_clip = VideoFileClip(arquivo_entrada)
+
+            # Ajusta a duração do áudio traduzido para corresponder à duração do vídeo
+            duracao_video = video_clip.duration
+            audio_clip = AudioFileClip(caminho_audio_final).set_duration(duracao_video)
+
+            # Define o áudio traduzido como áudio do vídeo
+            video_clip = video_clip.set_audio(audio_clip)
+
+            # Exporta o novo vídeo com áudio traduzido
+            video_saida = os.path.join("static", f"dubbed_video.mp4")
+            with tempfile.NamedTemporaryFile(suffix=".mp4") as temp_video_file:
+                video_clip.write_videofile(temp_video_file, codec='libx264', audio_codec='aac')
+                shutil.copy(temp_video_file.name, video_saida)
+
+            print(f"Vídeo com áudio traduzido salvo como '{video_saida}'.")
+            return video_saida
+        else:
+            print(f"Arquivo de entrada não é um vídeo. O áudio traduzido foi salvo como '{caminho_audio_final}'.")
+            return caminho_audio_final
+
+    
 
 
-def dublar_video(video_path):
-    try:
-        video = mp.VideoFileClip(video_path)
-        
-        # Create a temporary file for the extracted audio
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio_file:
-            audio_path = temp_audio_file.name
-            video.audio.write_audiofile(audio_path)
-
-        # Processar o áudio para dublagem
-        caminho_audio_final = dublar_audio(audio_path)
-
-        final_video_path = os.path.join("static", f"dubbed_video.mp4")
-
-        video = video.set_audio(mp.AudioFileClip(caminho_audio_final))
-        video.write_videofile(final_video_path, codec='libx264')
-
-        # Opcional: Remover arquivos intermediários
-        os.remove(audio_path)
-        os.remove(caminho_audio_final)
-        
-        return final_video_path
-
-    except Exception as e:
-        print(f"Ocorreu um erro: {e}")
+#traduzir_e_sobrepor_audio("1.mp4", idioma_destino='pt')

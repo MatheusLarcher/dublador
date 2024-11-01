@@ -3,6 +3,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from dubbing import dublar_video  # Importar a função de dublagem
 import tempfile
+import os
 
 app = Flask(__name__)
 
@@ -21,7 +22,8 @@ def video_processado():
 @app.route('/process_video', methods=['POST'])
 def process_video():
     video_file = request.files['video']
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video_file:
+    file_extension = os.path.splitext(video_file.filename)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_video_file:
         video_path = temp_video_file.name
         video_file.save(video_path)
     final_video_path = dublar_video(video_path)
