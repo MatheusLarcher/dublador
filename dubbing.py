@@ -1,5 +1,5 @@
 from deep_translator import GoogleTranslator
-from gtts import gTTS
+import pyttsx3
 from pydub import AudioSegment
 import tempfile
 import os
@@ -20,6 +20,13 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
 
     # Carrega o modelo Whisper
     modelo = whisper.load_model("base")
+    
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[0].id)
+    
+    # engine.setProperty('rate', 150)   # Velocidade de fala
+    # engine.setProperty('volume', 0.9)  # Volume (0.0 a 1.0)
 
     # Transcreve o áudio
     resultado = modelo.transcribe(arquivo_entrada, word_timestamps=True, task='translate')
@@ -38,10 +45,10 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             texto_traduzido = GoogleTranslator(source='auto', target=idioma_destino).translate(texto_original)
             print(f"[{inicio} - {fim}] {texto_traduzido}")
 
+            caminho_arquivo = os.path.join(pasta_audio, f"segmento_{idx}.wav")
             # Converte o texto traduzido em áudio
-            tts = gTTS(texto_traduzido, lang=idioma_destino)
-            caminho_arquivo = os.path.join(pasta_audio, f"segmento_{idx}.mp3")
-            tts.save(caminho_arquivo)
+            engine.save_to_file(texto_traduzido, caminho_arquivo)
+            engine.runAndWait()
             lista_segmentos.append(caminho_arquivo)
 
         # Concatena todos os segmentos de áudio
@@ -51,8 +58,8 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             audio_final += segmento_audio
 
         # Exporta o áudio final concatenado
-        caminho_audio_final = os.path.join(pasta_audio, "audio_final.mp3")
-        audio_final.export(caminho_audio_final, format="mp3")
+        caminho_audio_final = os.path.join(pasta_audio, "audio_final.wav")
+        audio_final.export(caminho_audio_final, format="wav")
 
         # Verifica se o arquivo de entrada é um vídeo
         extensao = os.path.splitext(arquivo_entrada)[1].lower()
