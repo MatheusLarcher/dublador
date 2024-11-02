@@ -16,11 +16,19 @@
     </form>
     
     {% if filename %}
+        {% if filename.endswith('.mp4') %}
         <h3>Vídeo Processado:</h3>
         <video id="videoPlayer" width="600" controls>
             <source src="{{ url_for('static', filename=filename) }}" type="video/mp4">
             Seu navegador não suporta o elemento de vídeo.
         </video>
+        {% else %}
+        <h3>Áudio Processado:</h3>
+        <audio id="audioPlayer" controls>
+            <source src="{{ url_for('static', filename=filename) }}" type="audio/mp3">
+            Seu navegador não suporta o elemento de áudio.
+        </audio>
+        {% endif %}
     {% endif %}
 </body>
 </html>

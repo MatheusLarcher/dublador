@@ -13,10 +13,9 @@ def index():
     return render_template('upload.html', filename=None)
 
 # Rota principal para renderizar a página inicial
-@app.route('/video_processado')
-def video_processado():
-
-    return render_template('upload.html', filename='dubbed_video.mp4')
+@app.route('/video_processado/<filename>')
+def video_processado(filename):
+    return render_template('upload.html', filename=filename)
 
 # Rota para processar o upload do vídeo e dublá-lo
 @app.route('/process_video', methods=['POST'])
@@ -30,6 +29,7 @@ def process_video():
     return redirect(url_for('video_processado', filename=final_video_path))
 
 
-
+# Executar o aplicativo Flask
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=8010)
+    

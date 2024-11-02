@@ -1,4 +1,3 @@
-import whisper
 from deep_translator import GoogleTranslator
 from gtts import gTTS
 from pydub import AudioSegment
@@ -6,6 +5,8 @@ import tempfile
 import os
 from moviepy.editor import VideoFileClip, AudioFileClip
 import shutil
+import whisper
+from datetime import datetime
 
 def dublar_video(arquivo_entrada, idioma_destino='pt'):
     """
@@ -21,7 +22,7 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
     modelo = whisper.load_model("base")
 
     # Transcreve o áudio
-    resultado = modelo.transcribe(arquivo_entrada, word_timestamps=True)
+    resultado = modelo.transcribe(arquivo_entrada, word_timestamps=True, task='translate')
 
     # Cria uma pasta para salvar os áudios traduzidos temporaria
     with tempfile.TemporaryDirectory() as pasta_audio:
@@ -62,17 +63,23 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             video_clip = VideoFileClip(arquivo_entrada)
 
             # Ajusta a duração do áudio traduzido para corresponder à duração do vídeo
-            duracao_video = video_clip.duration
-            audio_clip = AudioFileClip(caminho_audio_final).set_duration(duracao_video)
+            # duracao_video = video_clip.duration
+            # audio_clip = AudioFileClip(caminho_audio_final).set_duration(duracao_video)
+            
+            # Carrega o áudio traduzido
+            audio_clip = AudioFileClip(caminho_audio_final)
 
             # Define o áudio traduzido como áudio do vídeo
             video_clip = video_clip.set_audio(audio_clip)
 
             # Exporta o novo vídeo com áudio traduzido
-            video_saida = os.path.join("static", f"dubbed_video.mp4")
-            with tempfile.NamedTemporaryFile(suffix=".mp4") as temp_video_file:
-                video_clip.write_videofile(temp_video_file, codec='libx264', audio_codec='aac')
-                shutil.copy(temp_video_file.name, video_saida)
+            video_saida =  f"dubbed_video{datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
+            with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video_file:
+                video_clip.write_videofile(temp_video_file.name, codec='libx264', audio_codec='aac')
+            
+            # Fecha o arquivo temporário antes de copiá-lo
+            temp_video_file.close()
+            shutil.move(temp_video_file.name, os.path.join("static", video_saida))
 
             print(f"Vídeo com áudio traduzido salvo como '{video_saida}'.")
             return video_saida
