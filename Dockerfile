@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED=1
 # Instale dependências do sistema necessárias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    espeak-ng \
+    espeak \
+    libespeak1 \
+    libespeak-dev \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
