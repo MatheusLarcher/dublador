@@ -54,7 +54,7 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
         # Concatena todos os segmentos de áudio
         audio_final = AudioSegment.empty()
         for caminho in lista_segmentos:
-            segmento_audio = AudioSegment.from_mp3(caminho)
+            segmento_audio = AudioSegment.from_wav(caminho)
             audio_final += segmento_audio
 
         # Exporta o áudio final concatenado
