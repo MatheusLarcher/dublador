@@ -1,11 +1,10 @@
 from deep_translator import GoogleTranslator
-import pyttsx3
 from pydub import AudioSegment
 import tempfile
 import os
 from moviepy.editor import VideoFileClip, AudioFileClip, concatenate_videoclips
 import moviepy.video.fx.all as vfx
-import shutil
+from gtts import gTTS
 import whisper
 from datetime import datetime
 
@@ -39,17 +38,13 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             texto_traduzido = GoogleTranslator(source='auto', target=idioma_destino).translate(texto_original)
             print(f"[{inicio:.2f} - {fim:.2f}] {texto_traduzido}")
 
-            # Gera o áudio TTS
-            caminho_audio_segmento = os.path.join(temp_dir, f"segmento_{idx}.wav")
-            engine = pyttsx3.init()
-            voices = engine.getProperty('voices')
-            engine.setProperty('voice', voices[0].id)
-            engine.save_to_file(texto_traduzido, caminho_audio_segmento)
-            engine.runAndWait()
-            engine.stop()
+            # Gera o áudio TTS usando gTTS
+            caminho_audio_segmento = os.path.join(temp_dir, f"segmento_{idx}.mp3")
+            tts = gTTS(text=texto_traduzido, lang=idioma_destino)
+            tts.save(caminho_audio_segmento)
 
             # Carrega o áudio TTS gerado
-            segmento_audio = AudioSegment.from_wav(caminho_audio_segmento)
+            segmento_audio = AudioSegment.from_mp3(caminho_audio_segmento)
             duracao_tts = len(segmento_audio) / 1000  # em segundos
 
             # Extrai o segmento de vídeo correspondente
