@@ -51,10 +51,16 @@
     </style>
 </head>
 <body>
-    <h2>Carregar um Arquivo de Vídeo</h2>
+    <h2>Carregar um Vídeo ou Inserir URL do YouTube</h2>
     <form action="/process_video" method="post" enctype="multipart/form-data">
         <label for="videoUpload">Selecione um vídeo:</label>
-        <input type="file" id="videoUpload" name="video" accept="video/*" required>
+        <input type="file" id="videoUpload" name="video" accept="video/*">
+        
+        <h3>OU</h3>
+        
+        <label for="youtubeURL">Insira a URL do YouTube:</label>
+        <input type="url" id="youtubeURL" name="youtube_url" placeholder="https://www.youtube.com/watch?v=...">
+        
         <br><br>
         <button type="submit">Dublar Vídeo</button>
     </form>

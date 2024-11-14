@@ -35,12 +35,12 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             texto_original = segmento['text']
 
             # Traduz o texto para o idioma destino
-            texto_traduzido = GoogleTranslator(source='auto', target=idioma_destino).translate(texto_original)
+            texto_traduzido = GoogleTranslator(source='en', target=idioma_destino).translate(texto_original)
             print(f"[{inicio:.2f} - {fim:.2f}] {texto_traduzido}")
 
             # Gera o áudio TTS usando gTTS
             caminho_audio_segmento = os.path.join(temp_dir, f"segmento_{idx}.mp3")
-            tts = gTTS(text=texto_traduzido, lang=idioma_destino)
+            tts = gTTS(text=texto_traduzido, lang=idioma_destino, slow=False, lang_check=False)
             tts.save(caminho_audio_segmento)
 
             # Carrega o áudio TTS gerado
@@ -70,6 +70,7 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
 
         # Concatena todos os segmentos de vídeo
         final_video = concatenate_videoclips(video_segments, method="compose")
+        final_video = final_video.fx(vfx.speedx, factor=1.1)
 
         # Exporta o novo vídeo com áudio traduzido
         video_saida = f"dubbed_video{datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
