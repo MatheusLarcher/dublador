@@ -3,3 +3,7 @@
 /dist
 *.mp4
 /baixar/build
+/baixar/__pycache__
+/baixar/__pycache__
+/baixar/dist
+/baixar/dist
