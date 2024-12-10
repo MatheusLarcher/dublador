@@ -1,3 +1,9 @@
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+logging.info("Iniciando o processo de dublagem... [carregando bibliotecas]")
+
 from deep_translator import GoogleTranslator
 import pyttsx3
 from pydub import AudioSegment
@@ -7,6 +13,9 @@ from moviepy.editor import VideoFileClip, AudioFileClip
 import shutil
 import whisper
 from datetime import datetime
+import sys
+
+logging.info("Biliotecas carregadas com sucesso")
 
 def dublar_video(arquivo_entrada, idioma_destino='pt'):
     """
@@ -43,7 +52,7 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
 
             # Traduz o texto para o idioma destino usando deep_translator
             texto_traduzido = GoogleTranslator(source='auto', target=idioma_destino).translate(texto_original)
-            print(f"[{inicio} - {fim}] {texto_traduzido}")
+            logging.info(f"[{inicio} - {fim}] {texto_traduzido}")
 
             caminho_arquivo = os.path.join(pasta_audio, f"segmento_{idx}.wav")
             # Converte o texto traduzido em áudio
@@ -88,30 +97,34 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             temp_video_file.close()
             shutil.move(temp_video_file.name, os.path.join("static", video_saida))
 
-            print(f"Vídeo com áudio traduzido salvo como '{video_saida}'.")
+            logging.info(f"Vídeo com áudio traduzido salvo como '{video_saida}'.")
             return video_saida
         else:
-            print(f"Arquivo de entrada não é um vídeo. O áudio traduzido foi salvo como '{caminho_audio_final}'.")
+            logging.info(f"Arquivo de entrada não é um vídeo. O áudio traduzido foi salvo como '{caminho_audio_final}'.")
             return caminho_audio_final
 
     
 
 if __name__ == "__main__":
+    
+    if getattr(sys, 'frozen', False):
+        pasta_atual = os.path.dirname(os.path.abspath(sys.executable))
+    else:
+        pasta_atual = os.path.dirname(os.path.abspath(__file__))
+    
 
-    caminho_executavel = os.path.dirname(os.path.abspath(__file__))
-    #caminho da pasta onde esta o script
-    caminho_pasta = os.path.dirname(caminho_executavel)
 
-    print("Dublicando arquivos...")
+    logging.info("Dublando arquivos...")
     # procupar arquivos mp4 na pasta
-    arquivos_mp4 = [f for f in os.listdir(os.getcwd()) if f.endswith('.mp4')]
+    arquivos_mp4 = [f for f in os.listdir(pasta_atual) if f.endswith('.mp4')]
 
     for arquivo in arquivos_mp4:
         try:
-            print(f"Dublicando {arquivo}...")
+            logging.info(f"Dublicando {arquivo}...")
             arquivo_dublado = dublar_video(arquivo, 'pt')
-            print(f"Dublicado {arquivo} -> {arquivo_dublado}")
+            logging.info(f"Dublicado {arquivo} -> {arquivo_dublado}")
         except Exception as e:
-            print(f"Erro ao dublicar {arquivo}: {e}")
+            logging.error(f"Erro ao dublicar {arquivo}: {e}")
         
-    print("Fim do processo")
+    logging.info("Fim do processo")
+
