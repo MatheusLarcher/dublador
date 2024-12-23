@@ -1,4 +1,5 @@
 import logging
+import torch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -26,9 +27,14 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
     - arquivo_entrada (str): Caminho do arquivo de áudio ou vídeo.
     - idioma_destino (str): Código do idioma para tradução e síntese de voz (padrão é 'pt' para português).
     """
+    
+    if torch.cuda.is_available():
+        logging.info("GPU disponível. Whisper usará GPU para aceleração.")
+    else:
+        logging.info("GPU não disponível. Whisper será executado na CPU.")
 
     # Carrega o modelo Whisper
-    modelo = whisper.load_model("base")
+    modelo = whisper.load_model("base", device="cuda" if torch.cuda.is_available() else "cpu")
     
     engine = pyttsx3.init()
     voices = engine.getProperty('voices')
@@ -89,42 +95,16 @@ def dublar_video(arquivo_entrada, idioma_destino='pt'):
             video_clip = video_clip.set_audio(audio_clip)
 
             # Exporta o novo vídeo com áudio traduzido
-            video_saida =  f"dubbed_video{datetime.now().strftime('%Y%m%d%H%M%S')}.mp4"
+            video_saida =  arquivo_entrada.replace(".mp4", "_dublado.mp4")
             with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_video_file:
                 video_clip.write_videofile(temp_video_file.name, codec='libx264', audio_codec='aac')
             
             # Fecha o arquivo temporário antes de copiá-lo
             temp_video_file.close()
-            shutil.move(temp_video_file.name, os.path.join("static", video_saida))
+            shutil.move(temp_video_file.name, video_saida)
 
             logging.info(f"Vídeo com áudio traduzido salvo como '{video_saida}'.")
             return video_saida
         else:
             logging.info(f"Arquivo de entrada não é um vídeo. O áudio traduzido foi salvo como '{caminho_audio_final}'.")
             return caminho_audio_final
-
-    
-
-if __name__ == "__main__":
-    
-    if getattr(sys, 'frozen', False):
-        pasta_atual = os.path.dirname(os.path.abspath(sys.executable))
-    else:
-        pasta_atual = os.path.dirname(os.path.abspath(__file__))
-    
-
-
-    logging.info("Dublando arquivos...")
-    # procupar arquivos mp4 na pasta
-    arquivos_mp4 = [f for f in os.listdir(pasta_atual) if f.endswith('.mp4')]
-
-    for arquivo in arquivos_mp4:
-        try:
-            logging.info(f"Dublicando {arquivo}...")
-            arquivo_dublado = dublar_video(arquivo, 'pt')
-            logging.info(f"Dublicado {arquivo} -> {arquivo_dublado}")
-        except Exception as e:
-            logging.error(f"Erro ao dublicar {arquivo}: {e}")
-        
-    logging.info("Fim do processo")
-
