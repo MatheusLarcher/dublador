@@ -1,10 +1,11 @@
+# dublar.py
+
 from baixar_youtube import baixar_youtube
 import sys
 import tkinter as tk
 from tkinter import ttk
 import threading
 from dubbing import dublar_video
-import os
 from datetime import datetime
 args = sys.argv
 url = args[1] if len(args) > 1 else None
