@@ -2,4 +2,4 @@ conda create --name dublador python=3.11 -y
 conda activate dublador
 
 
-pyinstaller --onefile --hidden-import=yt_dlp --collect-all yt_dlp dublar.py
+pyinstaller --onefile --noconsole --hidden-import=yt_dlp --collect-all=yt_dlp --collect-all=whisper --add-data "C:/Users/mathe/.cache/whisper;whisper/.cache/whisper" dublar.py
